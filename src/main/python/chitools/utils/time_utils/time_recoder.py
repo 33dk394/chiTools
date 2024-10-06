@@ -1,9 +1,9 @@
 import time
+import logging
 import functools
 
 import pandas as pd
 
-import logging
 logger = logging.getLogger(__name__)
 class SingletonClass(object):
     def __new__(cls, *args, **kwargs):
@@ -15,7 +15,6 @@ class SingletonClass(object):
     def clear(cls):
         delattr(cls.__class__, "_instance")
         delattr(cls.__class__, "_initialized")
-
 class TimeRecoder(SingletonClass):
     def __init__(self):
         if self._initialized: return
@@ -28,26 +27,21 @@ class TimeRecoder(SingletonClass):
         label = f'Section {len(self._time_interval)}' if label is None else label
         self._time_interval.append([label, time.perf_counter_ns()])
 
-    def end(self):
-        self._time_interval.append(["end", time.perf_counter_ns()])
+    def get_total_exec_time(self) -> float:
         return (self._time_interval[-1][1]-self._time_interval[0][1])/1e9
-    
-    def get_cost_time(self):
-        res = list()
-        for pre, cur in zip(self._time_interval[:-1], self._time_interval[1:]):
-            section_name = cur[0]
-            used_time = (cur[1] - pre[1]) / 1e9
-            res.append([section_name, used_time])
-        return res
-    
-    def log_time(self):
+
+    def get_exec_time(self) -> list[tuple[str, float]]:
+        return [(cur[0], (cur[1]-pre[1])/1e9) for pre, cur in zip(self._time_interval[:-1], self._time_interval[1:])]
+
+    def log_exec_time(self):
         _log_record = "Time Record:"
-        for section_name, used_time in self.get_cost_time():
-            _log_record += f'\n{section_name:>12s} Used {used_time:>9.3f} Second'
+        for section_name, used_time in self.get_exec_time():
+            _log_record += f'\n{section_name:>25s}\tUsed {used_time:>9.3f} sec'
         logger.info(_log_record)
 
-    def get_record(self):
-        return pd.DataFrame(self.get_cost_time())
+    def record_exec_time(self):
+        self.log_exec_time()
+        return pd.DataFrame(self.get_exec_time(), columns=["Section", "Execution Time"])
 
 def time_recorder(func):
     @functools.wraps(func)

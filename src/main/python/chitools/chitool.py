@@ -21,8 +21,7 @@ def main():
     app2()
     app3()
     print("Chi Tools Done")
-    TimeRecoder().log_time()
-    TimeRecoder().get_record().to_csv("./Test.csv", index=False)
+    TimeRecoder().record_exec_time().to_csv("./Test.csv", index=False)
 
 
 if __name__ == "__main__":
