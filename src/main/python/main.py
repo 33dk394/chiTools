@@ -1,8 +1,11 @@
-from chitools import chitool
-
 import logging
+import logging.config
+
+from chitools import chitool
+from chitools.utils.proj_logger import proj_logger
+
+logging.config.dictConfig(proj_logger.cfg_logger)
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
 
 def main():
     logger.info("This is main")
