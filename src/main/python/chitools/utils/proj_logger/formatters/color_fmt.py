@@ -1,24 +1,16 @@
 import logging
 
 CSI = "\033["
-DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] : %(message)s"
 
-def code_to_chars(code):
+def code2chars(code):
     return CSI + str(code) + "m"
-
-def clear_screen(mode=2):
-    return CSI + str(mode) + "J"
-
-def clear_line(mode=2):
-    return CSI + str(mode) + "K"
-
 
 class AnsiCode(object):
     def __init__(self):
         for name in dir(self):
             if not name.startswith("_"):
                 value = getattr(self, name)
-                setattr(self, name, code_to_chars(value))
+                setattr(self, name, code2chars(value))
 
 
 class FontColor(AnsiCode):
@@ -51,12 +43,11 @@ class FontStyle (AnsiCode):
     NORMAL  = 22
     RESET_ALL = 0
 
+
 color = FontColor()
 background = Background()
 style = FontStyle()
 
-
-TIME_FORMAT = f'{color.YELLOW}%(asctime)s{style.RESET_ALL}'
 COLORS = {
     "DEBUG":    color.GREEN,
     "INFO":     color.WHITE,
@@ -64,29 +55,31 @@ COLORS = {
     "ERROR":    color.WHITE,
     "CRITICAL": color.RED,
 }
+
 MSG_FORMAT = {
-    "DEBUG":    style.DIM+COLORS["DEBUG"],
-    "INFO":     COLORS["INFO"],
-    "WARNING":  COLORS["WARNING"],
+    "DEBUG":    style.BRIGHT+COLORS["DEBUG"],
+    "INFO":     style.BRIGHT+COLORS["INFO"],
+    "WARNING":  style.BRIGHT+COLORS["WARNING"],
     "ERROR":    style.BRIGHT+background.RED+COLORS["ERROR"],
     "CRITICAL": style.BRIGHT+COLORS["CRITICAL"],
 }
+
+DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] : %(message)s"
+TIME_FORMAT = f'{style.DIM}{color.YELLOW}%(asctime)s{style.RESET_ALL}'
+FILE_FORMAT = "[%(filename)+20s:%(lineno)+3s]"
+
 FORMATS = {
-    "DEBUG":    f'{TIME_FORMAT} {MSG_FORMAT["DEBUG"]}[%(levelname)+8s]{style.RESET_ALL} - %(message)s',
-    "INFO":     f'{TIME_FORMAT} {MSG_FORMAT["INFO"]}[%(levelname)+8s]{style.RESET_ALL} - %(message)s',
-    "WARNING":  f'{TIME_FORMAT} {MSG_FORMAT["WARNING"]}[%(levelname)+8s]{style.RESET_ALL} - %(message)s',
-    "ERROR":    f'{TIME_FORMAT} {MSG_FORMAT["ERROR"]}[%(levelname)+8s] - %(message)s{style.RESET_ALL}',
-    "CRITICAL": f'{TIME_FORMAT} {MSG_FORMAT["CRITICAL"]}[%(levelname)+8s] - %(message)s{style.RESET_ALL}',
+    "DEBUG":    f'{TIME_FORMAT} {MSG_FORMAT["DEBUG"]}[%(levelname)+8s]{FILE_FORMAT} - %(message)s{style.RESET_ALL}',
+    "INFO":     f'{TIME_FORMAT} {MSG_FORMAT["INFO"]}[%(levelname)+8s]{style.RESET_ALL}{FILE_FORMAT} - %(message)s',
+    "WARNING":  f'{TIME_FORMAT} {MSG_FORMAT["WARNING"]}[%(levelname)+8s]{style.RESET_ALL}{FILE_FORMAT} - %(message)s',
+    "ERROR":    f'{TIME_FORMAT} {MSG_FORMAT["ERROR"]}[%(levelname)+8s]{FILE_FORMAT} - %(message)s{style.RESET_ALL}',
+    "CRITICAL": f'{TIME_FORMAT} {MSG_FORMAT["CRITICAL"]}[%(levelname)+8s]{FILE_FORMAT} - %(message)s{style.RESET_ALL}',
 }
 
 class ColoredFormatter(logging.Formatter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.formatters = {level: logging.Formatter(fmt=f, **kwargs) for level, f in FORMATS.items()}
 
-    def format(self, record):
-        levelname = record.levelname
-        if levelname in FORMATS:
-            msg = logging.Formatter(FORMATS[levelname]).format(record)
-        else:
-            msg = logging.Formatter(DEFAULT_FORMAT).format(record)
-        return msg
+    def format(self, record: logging.LogRecord) -> str:
+        return self.formatters[record.levelname].format(record)

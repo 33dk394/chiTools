@@ -24,11 +24,11 @@ def app3():
     time.sleep(0.5)
 
 def main():
-    prepare_data()
+    # prepare_data()
     app2()
     app3()
-    print("Chi Tools Done")
-    TimeRecoder().record_exec_time().to_csv("./Test.csv", index=False)
+    logger.info("Chi Tools Done")
+    TimeRecoder().record_exec_time().to_csv("./exec_time.csv", index=False)
 
 
 if __name__ == "__main__":
